@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TranslatorKu</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="main-container">
+        <header class="app-header">
+            <div class="header-text">
+                <h2>Hello!</h2>
+                <h1>What can I translate for you today?</h1>
+            </div>
+            <div class="logo-container">
+                <!-- PERBAIKAN BUG 2: Hapus /public dari path -->
+                <img src="/assets/TranslatorKu_Logo.png" alt="TranslatorKu Logo" class="logo">
+                <span>TranslatorKu</span>
+            </div>
+        </header>
+
+        <main class="translator-core">
+            <div class="language-controls">
+                <div class="lang-dropdown-wrapper">
+                    <button id="source-lang-btn" class="lang-btn" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="source-lang-text">Deteksi Bahasa</span>
+                        <i class="fa-solid fa-angle-down"></i>
+                    </button>
+                </div>
+                <button id="swap-btn" class="swap-btn" title="Tukar Bahasa" aria-label="Tukar bahasa sumber dan tujuan">
+                    <i class="fa-solid fa-right-left"></i>
+                </button>
+                <div class="lang-dropdown-wrapper">
+                     <select id="target-lang-select" class="lang-btn"></select>
+                </div>
+            </div>
+
+            <div class="io-panel">
+                <!-- Kolom Input -->
+                <div class="text-area-container">
+                    <textarea id="text-input" placeholder="Masukkan teks..."></textarea>
+                    <button id="clear-input-btn" class="clear-btn hidden" title="Hapus teks">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="bottom-controls">
+                        <button id="mic-btn" class="icon-btn" title="Terjemahkan dari suara">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                        <button id="copy-input-btn" class="icon-btn" title="Salin teks">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kolom Output -->
+                <div class="text-area-container output-container">
+                    <div id="output-wrapper" aria-live="polite">
+                        <!-- Hasil terjemahan akan muncul di sini -->
+                    </div>
+                    <div id="loading" class="loading-overlay hidden">
+                        <div class="spinner"></div>
+                    </div>
+                     <div class="bottom-controls">
+                        <button id="copy-output-btn" class="icon-btn" title="Salin hasil">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- PERBAIKAN BUG 1: Tambahkan kelas "hidden" secara default -->
+    <div id="source-lang-menu" class="dropdown-menu hidden" role="listbox"></div>
+
+    <!-- Font Awesome untuk ikon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" defer></script>
+    <script src="main.js" defer></script>
+</body>
+</html>
