@@ -24,7 +24,7 @@ const primaryModel = genAI.getGenerativeModel({
 });
 // Model fallback yang stabil jika model utama rate limited
 const fallbackModel = genAI.getGenerativeModel({
-    model: "gemini-pro",
+    model: "gemini-2.0-flash",
     generationConfig: { responseMimeType: "application/json" }
 });
 

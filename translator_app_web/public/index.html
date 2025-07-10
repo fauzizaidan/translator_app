@@ -14,7 +14,6 @@
                 <h1>What can I translate for you today?</h1>
             </div>
             <div class="logo-container">
-                <!-- PERBAIKAN BUG 2: Hapus /public dari path -->
                 <img src="/assets/TranslatorKu_Logo.png" alt="TranslatorKu Logo" class="logo">
                 <span>TranslatorKu</span>
             </div>
@@ -71,8 +70,13 @@
         </main>
     </div>
 
-    <!-- PERBAIKAN BUG 1: Tambahkan kelas "hidden" secara default -->
+    <!-- Dropdown untuk memilih bahasa sumber -->
     <div id="source-lang-menu" class="dropdown-menu hidden" role="listbox"></div>
+
+    <div id="copy-notification" class="copy-notification hidden">
+        <i class="fa-solid fa-check"></i>
+        <span>Teks disalin</span>
+    </div>
 
     <!-- Font Awesome untuk ikon -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js" defer></script>

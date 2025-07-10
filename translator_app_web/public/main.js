@@ -20,7 +20,8 @@ document.addEventListener('DOMContentLoaded', () => {
         copyInputBtn: document.getElementById('copy-input-btn'),
         copyOutputBtn: document.getElementById('copy-output-btn'),
         clearInputBtn: document.getElementById('clear-input-btn'),
-        micBtn: document.getElementById('mic-btn')
+        micBtn: document.getElementById('mic-btn'),
+        copyNotification: document.getElementById('copy-notification')
     };
 
     // --- FUNGSI-FUNGSI ---
@@ -42,17 +43,13 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUI();
     };
     
-    // PERBAIKAN BUG 3: Logika UI yang lebih cerdas
     const updateUI = () => {
         const btnText = dom.sourceLangBtn.querySelector('span');
-        // Tentukan teks yang akan ditampilkan di tombol berdasarkan state.sourceLang
         if (state.sourceLang === 'auto' && state.lastDetectedLang && config.languages[state.lastDetectedLang] && dom.textInput.value.trim()) {
             btnText.innerHTML = `${config.languages[state.lastDetectedLang]} <small>(terdeteksi)</small>`;
         } else {
             btnText.textContent = config.languages[state.sourceLang];
         }
-        
-        // Update tanda centang di menu dropdown berdasarkan state.sourceLang
         dom.sourceLangMenu.querySelectorAll('.dropdown-option').forEach(opt => {
             opt.classList.toggle('selected', opt.dataset.value === state.sourceLang);
         });
@@ -69,10 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!textToTranslate) {
             dom.outputWrapper.innerHTML = '';
             state.lastDetectedLang = null;
-            // Jika input kosong, selalu reset ke mode deteksi otomatis
-            if (state.sourceLang !== 'auto') {
-                state.sourceLang = 'auto';
-            }
+            if (state.sourceLang !== 'auto') state.sourceLang = 'auto';
             updateUI();
             return;
         }
@@ -85,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: textToTranslate,
-                    sourceLang: state.sourceLang, // Selalu kirim state saat ini
+                    sourceLang: state.sourceLang,
                     targetLang: dom.targetLangSelect.value
                 })
             });
@@ -97,10 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 outputHTML += `<p class="romanization-text">${data.romanization}</p>`;
             }
             dom.outputWrapper.innerHTML = outputHTML;
-
-            // PERBAIKAN BUG 3: Hanya simpan hasil deteksi. Jangan ubah state.sourceLang.
             state.lastDetectedLang = data.detectedSourceLang;
-            updateUI(); // Panggil updateUI untuk me-render state terbaru
+            updateUI();
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error('Translation error:', error);
@@ -117,12 +109,31 @@ document.addEventListener('DOMContentLoaded', () => {
         return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), delay); };
     };
 
-    const copyToClipboard = (text, buttonEl) => {
+    let notificationTimeout;
+    const showCopyNotification = (message) => {
+        clearTimeout(notificationTimeout);
+        const notifText = dom.copyNotification.querySelector('span');
+        notifText.textContent = message;
+        dom.copyNotification.classList.remove('hidden');
+        setTimeout(() => {
+            dom.copyNotification.classList.add('show');
+        }, 10);
+        notificationTimeout = setTimeout(() => {
+            dom.copyNotification.classList.remove('show');
+            setTimeout(() => {
+                dom.copyNotification.classList.add('hidden');
+            }, 300);
+        }, 2500);
+    };
+
+    const copyToClipboard = (text, type = 'Teks') => {
         if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
-            const icon = buttonEl.querySelector('i');
-            icon.className = 'fa-solid fa-check';
-            setTimeout(() => { icon.className = 'fa-regular fa-copy'; }, 1500);
+            const message = type === 'Terjemahan' ? 'Terjemahan disalin' : 'Teks sumber disalin';
+            showCopyNotification(message);
+        }).catch(err => {
+            console.error('Gagal menyalin teks: ', err);
+            alert('Gagal menyalin teks ke clipboard.');
         });
     };
     
@@ -147,35 +158,22 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.micBtn.disabled = true;
             return;
         }
-
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.lang = state.sourceLang === 'auto' ? 'id-ID' : state.sourceLang; // Gunakan bahasa sumber jika dipilih
-        recognition.interimResults = false;
-
+        recognition.lang = state.sourceLang === 'auto' ? 'id-ID' : state.sourceLang;
         recognition.onstart = () => {
             state.isListening = true;
             dom.micBtn.classList.add('listening');
-            dom.micBtn.title = "Mendengarkan...";
         };
-
         recognition.onresult = (event) => {
-            const speechResult = event.results[0][0].transcript;
-            dom.textInput.value = speechResult;
+            dom.textInput.value = event.results[0][0].transcript;
+            updateUI();
             handleTranslation();
         };
-
-        recognition.onerror = (event) => {
-            console.error("Speech recognition error", event.error);
-            alert(`Error pengenalan suara: ${event.error}`);
-        };
-        
+        recognition.onerror = (event) => console.error("Speech recognition error", event.error);
         recognition.onend = () => {
             state.isListening = false;
             dom.micBtn.classList.remove('listening');
-            dom.micBtn.title = "Terjemahkan dari suara";
         };
-        
         if (state.isListening) {
             recognition.stop();
         } else {
@@ -208,11 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleMenu(!state.isMenuOpen);
         });
 
-        // PERBAIKAN BUG 3: Aksi memilih dari menu secara eksplisit mengubah state
         dom.sourceLangMenu.addEventListener('click', (e) => {
             const target = e.target.closest('.dropdown-option');
             if (target) {
-                // Inilah aksi pilihan manual, ubah state.sourceLang
                 state.sourceLang = target.dataset.value;
                 toggleMenu(false);
                 updateUI();
@@ -221,22 +217,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         dom.swapBtn.addEventListener('click', () => {
-            // Logika swap yang lebih andal
             const sourceToSwitch = state.sourceLang === 'auto' ? state.lastDetectedLang : state.sourceLang;
             if (!sourceToSwitch || sourceToSwitch === 'auto') return;
-
             const targetToSwitch = dom.targetLangSelect.value;
-            
             state.sourceLang = targetToSwitch;
             dom.targetLangSelect.value = sourceToSwitch;
-            
             const tempInputText = dom.textInput.value;
             dom.textInput.value = dom.outputWrapper.querySelector('.translated-text')?.textContent.trim() || '';
-            
-            state.lastDetectedLang = targetToSwitch; // Anggap hasil swap sebagai deteksi
+            state.lastDetectedLang = targetToSwitch;
             updateUI();
-            if(dom.textInput.value) handleTranslation();
-            else dom.outputWrapper.innerHTML = `<p class="translated-text">${tempInputText}</p>`;
+            if(dom.textInput.value) {
+                handleTranslation();
+            } else {
+                dom.outputWrapper.innerHTML = `<p class="translated-text">${tempInputText}</p>`;
+            }
         });
 
         dom.micBtn.addEventListener('click', handleSpeechRecognition);
@@ -247,19 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        dom.copyInputBtn.addEventListener('click', () => copyToClipboard(dom.textInput.value, dom.copyInputBtn));
+        dom.copyInputBtn.addEventListener('click', () => copyToClipboard(dom.textInput.value, 'Teks sumber'));
         dom.copyOutputBtn.addEventListener('click', () => {
              const mainText = dom.outputWrapper.querySelector('.translated-text')?.textContent || '';
-             copyToClipboard(mainText, dom.copyOutputBtn);
+             copyToClipboard(mainText, 'Terjemahan');
         });
     };
 
     // --- INISIALISASI ---
     setupEventListeners();
 });
-
-// Implementasi fungsi yang tidak berubah
-const debounce = (func, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func(...args), delay); }; };
-const copyToClipboard = (text, buttonEl) => { if (!text) return; navigator.clipboard.writeText(text).then(() => { const icon = buttonEl.querySelector('i'); icon.className = 'fa-solid fa-check'; setTimeout(() => { icon.className = 'fa-regular fa-copy'; }, 1500); }); };
-const toggleMenu = (show) => { const dom = { sourceLangMenu: document.getElementById('source-lang-menu'), sourceLangBtn: document.getElementById('source-lang-btn') }; const state = { isMenuOpen: !dom.sourceLangMenu.classList.contains('hidden') }; if (typeof show === 'undefined') { show = !state.isMenuOpen; } state.isMenuOpen = show; dom.sourceLangMenu.classList.toggle('hidden', !show); dom.sourceLangBtn.setAttribute('aria-expanded', show); if (show) { const rect = dom.sourceLangBtn.getBoundingClientRect(); dom.sourceLangMenu.style.left = `${rect.left}px`; dom.sourceLangMenu.style.top = `${rect.bottom + 8}px`; dom.sourceLangMenu.style.width = `${rect.width}px`; const selected = dom.sourceLangMenu.querySelector('.selected') || dom.sourceLangMenu.firstElementChild; selected?.focus(); } 
-};

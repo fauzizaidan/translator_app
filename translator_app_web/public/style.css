@@ -177,6 +177,38 @@ textarea {
 .error-text { color: #d93025; font-weight: 600; }
 .error-text strong { display: block; margin-bottom: 4px; }
 
+/* === NOTIFIKASI COPY === */
+.copy-notification {
+    position: fixed; /* Posisi tetap di layar */
+    bottom: 2rem; /* Jarak dari bawah */
+    left: 50%;
+    transform: translateX(-50%); /* Pusatkan secara horizontal */
+    background-color: #28a745; /* Warna hijau sukses */
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    z-index: 2000; /* Pastikan di atas semua elemen lain */
+    
+    /* Animasi muncul dan menghilang */
+    opacity: 0;
+    transform: translate(-50%, 20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.copy-notification.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.copy-notification i {
+    font-size: 1.1rem;
+}
+
 /* === RESPONSIVE === */
 @media (max-width: 820px) {
     .io-panel { grid-template-columns: 1fr; }
