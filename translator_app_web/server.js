@@ -43,7 +43,7 @@ async function safeGenerate(prompt) {
     } catch (err) {
         const isRateLimitError = (err.status === 429 || (err.message && err.message.includes('429')));
         if (isRateLimitError) {
-            console.warn("Model utama rate limited. Mencoba fallback ke model alternatif (gemini-pro)...");
+            console.warn("Model utama rate limited. Mencoba fallback ke model alternatif...");
             return await fallbackModel.generateContent(prompt);
         }
         throw err;

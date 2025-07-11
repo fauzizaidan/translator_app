@@ -70,7 +70,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const signal = translationController.signal;
         
         const textToTranslate = dom.textInput.value.trim();
-        // ================== PERBAIKAN LOGIKA 1 ==================
         if (!textToTranslate) {
             dom.outputWrapper.innerHTML = '';
             state.lastDetectedLang = null;
@@ -164,6 +163,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const handleKeyboardNavigation = (e) => {
+        // Penjaga: Fungsi ini hanya berjalan jika menu dropdown terbuka
+        if (!state.isMenuOpen) return;
+        
+        const options = [...dom.sourceLangMenu.querySelectorAll('.dropdown-option')];
+        const activeIndex = options.findIndex(opt => opt === document.activeElement);
+
+        switch (e.key) {
+            case 'Escape':
+                toggleMenu(false);
+                dom.sourceLangBtn.focus();
+                break;
+            case 'ArrowDown':
+                e.preventDefault();
+                const nextIndex = activeIndex >= options.length - 1 ? 0 : activeIndex + 1;
+                options[nextIndex].focus();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                const prevIndex = activeIndex <= 0 ? options.length - 1 : activeIndex - 1;
+                options[prevIndex].focus();
+                break;
+            case 'Enter':
+            case ' ':
+                e.preventDefault();
+                if (document.activeElement.classList.contains('dropdown-option')) {
+                    document.activeElement.click();
+                }
+                break;
+            case 'Tab':
+                e.preventDefault();
+                toggleMenu(false);
+                dom.switchLangBtn.focus();
+                break;
+        }
+    };
+
     const handleSpeechRecognition = () => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
@@ -250,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         dom.micBtn.addEventListener('click', handleSpeechRecognition);
-
         document.addEventListener('keydown', handleKeyboardNavigation);
         document.addEventListener('click', (e) => {
             if (state.isMenuOpen && !e.target.closest('#source-lang-menu')) {
