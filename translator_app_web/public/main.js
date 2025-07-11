@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dom = {
         textInput: document.getElementById('text-input'),
         sourceLangBtn: document.getElementById('source-lang-btn'),
+        sourceLangText: document.getElementById('source-lang-text'),
         sourceLangMenu: document.getElementById('source-lang-menu'),
         targetLangSelect: document.getElementById('target-lang-select'),
         swapBtn: document.getElementById('swap-btn'),
@@ -25,31 +26,37 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- FUNGSI-FUNGSI ---
+
     const populateDropdowns = () => {
         dom.sourceLangMenu.innerHTML = '';
-        Object.entries(config.languages).forEach(([code, name]) => {
+        for (const [code, name] of Object.entries(config.languages)) {
             const option = document.createElement('div');
             option.className = 'dropdown-option';
             option.dataset.value = code;
             option.setAttribute('role', 'option');
+            option.setAttribute('tabindex', '-1');
             option.innerHTML = `<i class="fa-solid fa-check"></i><span>${name}</span>`;
             dom.sourceLangMenu.appendChild(option);
-        });
+        }
         dom.targetLangSelect.innerHTML = '';
-        Object.entries(config.languages).forEach(([code, name]) => {
+        for (const [code, name] of Object.entries(config.languages)) {
             if (code !== 'auto') dom.targetLangSelect.add(new Option(name, code));
-        });
+        }
         dom.targetLangSelect.value = state.targetLang;
         updateUI();
     };
     
+    // Logika UI yang lebih cerdas
     const updateUI = () => {
         const btnText = dom.sourceLangBtn.querySelector('span');
+        // Tentukan teks yang akan ditampilkan di tombol berdasarkan state.sourceLang
         if (state.sourceLang === 'auto' && state.lastDetectedLang && config.languages[state.lastDetectedLang] && dom.textInput.value.trim()) {
             btnText.innerHTML = `${config.languages[state.lastDetectedLang]} <small>(terdeteksi)</small>`;
         } else {
             btnText.textContent = config.languages[state.sourceLang];
         }
+        
+        // Update tanda centang di menu dropdown berdasarkan state.sourceLang
         dom.sourceLangMenu.querySelectorAll('.dropdown-option').forEach(opt => {
             opt.classList.toggle('selected', opt.dataset.value === state.sourceLang);
         });
@@ -63,10 +70,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const signal = translationController.signal;
         
         const textToTranslate = dom.textInput.value.trim();
+        // ================== PERBAIKAN LOGIKA 1 ==================
         if (!textToTranslate) {
             dom.outputWrapper.innerHTML = '';
             state.lastDetectedLang = null;
-            if (state.sourceLang !== 'auto') state.sourceLang = 'auto';
+            // Jika input kosong, selalu reset ke mode deteksi otomatis.
+            if (state.sourceLang !== 'auto') {
+                state.sourceLang = 'auto';
+            }
             updateUI();
             return;
         }
@@ -79,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST', signal, headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: textToTranslate,
-                    sourceLang: state.sourceLang,
+                    sourceLang: state.sourceLang, // Selalu kirim state saat ini
                     targetLang: dom.targetLangSelect.value
                 })
             });
@@ -91,8 +102,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 outputHTML += `<p class="romanization-text">${data.romanization}</p>`;
             }
             dom.outputWrapper.innerHTML = outputHTML;
+
+            // Hanya simpan hasil deteksi. Jangan ubah state.sourceLang di sini.
             state.lastDetectedLang = data.detectedSourceLang;
-            updateUI();
+            updateUI(); // Panggil updateUI untuk me-render state terbaru
         } catch (error) {
             if (error.name !== 'AbortError') {
                 console.error('Translation error:', error);
@@ -211,8 +224,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target) {
                 state.sourceLang = target.dataset.value;
                 toggleMenu(false);
-                updateUI();
-                handleTranslation();
+                updateUI(); // Tampilkan pilihan baru di tombol
+                // Terjemahkan ulang dengan pilihan manual baru jika ada teks
+                if(dom.textInput.value.trim()) {
+                    handleTranslation(); 
+                }
             }
         });
 
@@ -235,6 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         dom.micBtn.addEventListener('click', handleSpeechRecognition);
 
+        document.addEventListener('keydown', handleKeyboardNavigation);
         document.addEventListener('click', (e) => {
             if (state.isMenuOpen && !e.target.closest('#source-lang-menu')) {
                 toggleMenu(false);
@@ -251,3 +268,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INISIALISASI ---
     setupEventListeners();
 });
+
